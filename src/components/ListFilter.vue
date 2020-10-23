@@ -1,7 +1,8 @@
 <template>
-  <div class="w-full h-screen px-40 text-left">
+  <div class="w-full text-left">
     <div class="">
-      {{query}}
+      <!-- {{query}}
+      {{columns}} -->
       <form action="">
         <div class="flex items-center mb-2 w-full" v-for="(queryItem, index) in query" :key="index">
           <div class="flex  flex-wrap -mx-3 mb-2 w-2/3">
@@ -16,9 +17,9 @@
                 <select
                   class="block appearance-none w-full bg-gray-200 border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
                   id="grid-state"
-                  v-model="query[index].selectedColumn"
+                  v-model="query[index].selection"
                   @change="resetState($event, index)"
-                  :name="`query${index}.selectedColumn`"
+                  :name="`query${index}.selection`"
                 >
                   <option>Select column</option>
                   <option v-for="(column, index) in columns" :key="index" :value="column.name">{{column.label}}</option>
@@ -49,10 +50,10 @@
                 <select
                   class="block appearance-none w-full bg-gray-200 border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
                   id="grid-state"
-                  v-model="query[index].operator"
-                  :name="`query${index}.selectedColumn`"
+                  v-model="query[index].element"
+                  :name="`query${index}.selection`"
                 >
-                  <option v-for="(option, index) in getComparisonOptions(index)" :value="option.operator" :key="index">{{option.text}}</option>
+                  <option v-for="(option, index) in getComparisonOptions(index)" :value="option.element" :key="index">{{option.text}}</option>
                 </select>
                 <div
                   class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700"
@@ -84,7 +85,7 @@
               /> -->
               <div class="flex items-center">
                 <div class="mr-2">
-                  <component :is="getValueComponent(index)[0]" v-model="query[index].assertValue1" :name="`query${index}.assertValue1`"/>
+                  <component :is="getValueComponent(index)[0]" v-model="query[index].value" :name="`query${index}.value`"/>
                 <!-- <datepicker
                   v-model="selected"
                   :locale="locale"
@@ -93,10 +94,10 @@
                 /> -->
                 </div>
                 <div>
-                  <component :is="getValueComponent(index)[1]" v-model="query[index].assertValue2" :name="`query${index}.assertValue2`"/>
+                  <component :is="getValueComponent(index)[1]" v-model="query[index].value2" :name="`query${index}.value2`"/>
                 </div>
               </div>
-              <!-- <single-text-field v-model="test" placeholder="value" v-if="{"sw", }.includes(query[0].operator)" /> -->
+              <!-- <single-text-field v-model="test" placeholder="value" v-if="{"sw", }.includes(query[0].element)" /> -->
             </div>
           </div>
           <div class="mt-2">
@@ -106,6 +107,7 @@
         </div>
         <div>
           <button class="px-4 py-2 bg-indigo-700 text-white text-base" type="button" @click="submit">Apply filter</button>
+          <button class="px-4 py-2 bg-gray-200 text-black text-base" type="button" @click="clearFilter">Clear filter</button>
         </div>
       </form>
     </div>
@@ -116,7 +118,7 @@
 /* eslint-disable no-debugger */
 /* eslint-disable vue/no-unused-components */
 /* eslint-disable no-unused-vars */
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import DatePicker from 'vue3-datepicker'
 
 import SingleTextField from "@/components/SingleTextField"
@@ -127,16 +129,22 @@ export default {
   components: {
     SingleTextField, DatePicker
   },
-  setup({props}){
-    let columns = [
-      {name: "firstName", label: "Firstname", dataType: "text" },
-      {name: "lastName", label: "Lastname", dataType: "text" },
-      {name: "age", label: "Age", dataType: "number" },
-      {name: "dateOfBirth", label: "Date of Birth", dataType: "date" }
-    ];
-
+  props: {
+    fields: {
+      type: Array,
+      default: () => []
+    }
+  },
+  setup(props, context){
+    // let columns = [
+    //   {name: "firstName", label: "Firstname", dataType: "text" },
+    //   {name: "lastName", label: "Lastname", dataType: "text" },
+    //   {name: "age", label: "Age", dataType: "number" },
+    //   {name: "dateOfBirth", label: "Date of Birth", dataType: "date" }
+    // ];
+    const columns = computed(() => props.fields);
     const query = ref([
-      {selectedColumn: "", operator: "", assertValue1: "", assertValue2: ""}
+      {selection: "", element: "", value: "", value2: ""}
     ]);
 
 
@@ -144,42 +152,42 @@ export default {
       text: {
         id: 1,
         options: [
-          {operator : "EQUALS", text: "Equals", operatorCode: "==", valueComponent:[SingleTextField]},
-          {operator : "STARTS_WITH", text: "Starts With", operatorCode: "", valueComponent: [SingleTextField]},
-          {operator : "ENDS_WITH", text: "Ends With", operatorCode: "", valueComponent: [SingleTextField]},
-          {operator : "CONTAINS", text: "Contains", operatorCode: "", valueComponent: [SingleTextField]},
-          {operator : "EMPTY", text: "Empty", operatorCode: "", valueComponent: []},
-          {operator : "NOT_EMPTY", text: "Not Empty", operatorCode: "", valueComponent: []},
+          {element : "EQUALS", text: "Equals", elementCode: "==", valueComponent:[SingleTextField]},
+          {element : "STARTS_WITH", text: "Starts With", elementCode: "", valueComponent: [SingleTextField]},
+          {element : "ENDS_WITH", text: "Ends With", elementCode: "", valueComponent: [SingleTextField]},
+          {element : "CONTAINS", text: "Contains", elementCode: "", valueComponent: [SingleTextField]},
+          {element : "EMPTY", text: "Empty", elementCode: "", valueComponent: []},
+          {element : "NOT_EMPTY", text: "Not Empty", elementCode: "", valueComponent: []},
         ]
       },
       date: {
         id: 2,
         options: [
-          {operator : "ON", text: "On", operatorCode: "==", valueComponent: [SingleTextField]},
-          {operator : "TODAY", text: "Today", operatorCode: "", valueComponent: [SingleTextField]},
-          {operator : "BETWEEN", text: "Between", operatorCode: "", valueComponent: [SingleTextField, SingleTextField]},
-          {operator : "EMPTY", text: "Empty", operatorCode: "", valueComponent: []},
-          {operator : "NOT_EMPTY", text: "Not Empty", operatorCode: "", valueComponent: []},
+          {element : "ON", text: "On", elementCode: "==", valueComponent: [SingleTextField]},
+          {element : "TODAY", text: "Today", elementCode: "", valueComponent: [SingleTextField]},
+          {element : "BETWEEN", text: "Between", elementCode: "", valueComponent: [SingleTextField, SingleTextField]},
+          {element : "EMPTY", text: "Empty", elementCode: "", valueComponent: []},
+          {element : "NOT_EMPTY", text: "Not Empty", elementCode: "", valueComponent: []},
         ]
       },
       selection: {
         id: 3,
         options: [
-          {operator : "IN", text: "In", operatorCode: "==", valueComponent: [SingleTextField]},
-          {operator : "EQUALS", text: "Equals", operatorCode: "==", valueComponent: [SingleTextField]},
-          {operator : "EMPTY", text: "Empty", operatorCode: "", valueComponent: []},
-          {operator : "NOT_EMPTY", text: "Not Empty", operatorCode: "", valueComponent: []},
+          {element : "IN", text: "In", elementCode: "==", valueComponent: [SingleTextField]},
+          {element : "EQUALS", text: "Equals", elementCode: "==", valueComponent: [SingleTextField]},
+          {element : "EMPTY", text: "Empty", elementCode: "", valueComponent: []},
+          {element : "NOT_EMPTY", text: "Not Empty", elementCode: "", valueComponent: []},
         ]
       },
       number: {
         id: 4,
         options: [
-          {operator : "GREATER_THAN", text: "More Than", operatorCode: "==", valueComponent: [SingleTextField]},
-          {operator : "LESS_THAN", text: "Less Than", operatorCode: "==", valueComponent: [SingleTextField]},
-          {operator : "BETWEEN", text: "Between", operatorCode: "==", valueComponent: [SingleTextField, SingleTextField]},
-          {operator : "EQUALS", text: "Equals", operatorCode: "==", valueComponent: [SingleTextField]},
-          {operator : "EMPTY", text: "Empty", operatorCode: "", valueComponent: []},
-          {operator : "NOT_EMPTY", text: "Not Empty", operatorCode: "", valueComponent: []},
+          {element : "GREATER_THAN", text: "More Than", elementCode: "==", valueComponent: [SingleTextField]},
+          {element : "LESS_THAN", text: "Less Than", elementCode: "==", valueComponent: [SingleTextField]},
+          {element : "BETWEEN", text: "Between", elementCode: "==", valueComponent: [SingleTextField, SingleTextField]},
+          {element : "EQUALS", text: "Equals", elementCode: "==", valueComponent: [SingleTextField]},
+          {element : "EMPTY", text: "Empty", elementCode: "", valueComponent: []},
+          {element : "NOT_EMPTY", text: "Not Empty", elementCode: "", valueComponent: []},
         ]
       }
     }
@@ -187,8 +195,8 @@ export default {
 
 
     const getComparisonOptions = (index) => {
-      if(query.value[index].selectedColumn){
-        const columnSelected = columns.find(column => column.name === query.value[index].selectedColumn);
+      if(query.value[index].selection){
+        const columnSelected = columns.value.find(column => column.name === query.value[index].selection);
         let options = dataTypes[columnSelected.dataType].options;
         return options;
       }
@@ -196,36 +204,42 @@ export default {
     }
 
     const getValueComponent = (index) => {
-      let {selectedColumn, operator} = query.value[index];
-      if(operator){
-        const columnSelected = columns.find(column => column.name === selectedColumn);
-        let component = dataTypes[columnSelected.dataType].options.find(option => option.operator === operator).valueComponent;
+      let {selection, element} = query.value[index];
+      if(element){
+        const columnSelected = columns.value.find(column => column.name === selection);
+        let component = dataTypes[columnSelected.dataType].options.find(option => option.element === element).valueComponent;
         return component;
       }
       return []
     }
 
     const addRow = () => {
-      query.value.push({selectedColumn: "", operator: "", assertValue1: "", assertValue2: ""})
+      query.value.push({selection: "", element: "", value: "", value2: ""})
     }
     const removeRow = (index) => {
       query.value.splice(index, 1)
     }
     const submit = () => {
-      console.log(query.value)
+      context.emit("filter-applied", query.value);
+    }
+
+    const clearFilter = () => {
+      query.value = [
+      {selection: "", element: "", value: "", value2: ""}
+    ]
+      context.emit("filter-applied", []);
     }
 
     const resetState = (event, index) => {
-      debugger
-      let selected = query.value[index].selectedColumn;
-      var found = query.value.filter(item => item.selectedColumn === selected);
+      let selected = query.value[index].selection;
+      var found = query.value.filter(item => item.selection === selected);
       if(found.length > 1){
-        query.value[index].selectedColumn = ''
+        query.value[index].selection = ''
       }
-      else query.value[index].operator = ''
+      else query.value[index].element = ''
     }
 
-    return {columns, query, getComparisonOptions, getValueComponent, addRow, removeRow, submit, resetState}
+    return {columns, query, getComparisonOptions, getValueComponent, addRow, removeRow, submit,clearFilter, resetState}
   }
 };
 </script>
